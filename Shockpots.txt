@@ -1,0 +1,65 @@
+// NOTE: User Scripts can subscribe to multiple input topics, but can only publish on a single topic.
+
+// This is for foxglove specific types
+import { Input } from "./types";
+
+// What we yeet
+type Output = {
+  FL_shockpot: number;
+  FR_shockpot: number;
+  RL_shockpot: number;
+  RR_shockpot: number;
+};
+type GlobalVariables = { id: number };
+
+// Local vars to calc shit
+var FL_shockpot_disp = 0;
+var FR_shockpot_disp = 0;
+var RL_shockpot_disp = 0;
+var RR_shockpot_disp = 0;
+
+// List all the input topics in the `input` array
+export const inputs = [
+  "cornernode_fl_shockpot_data",
+  "cornernode_fr_shockpot_data",
+  "cornernode_rl_shockpot_data",
+  "cornernode_rr_shockpot_data",
+];
+export const output = "/math_script/shockpots";
+
+// Make an InputEvent type alias. Since our script will get a message from either input topic, we need to enumerate the topics.
+type InputEvent =
+  | Input<"cornernode_fl_shockpot_data">
+  | Input<"cornernode_fr_shockpot_data">
+  | Input<"cornernode_rl_shockpot_data">
+  | Input<"cornernode_rr_shockpot_data">;
+
+export default function script(
+  event: InputEvent,
+  globalVars: GlobalVariables,
+): Output {
+  switch (event.topic) {
+    case "cornernode_fl_shockpot_data":
+      FL_shockpot_disp = 0.768*(event.message.cornernode_fl_shockpot / 247.67);
+      break;
+
+    case "cornernode_fr_shockpot_data":
+      FR_shockpot_disp = 0.793*(event.message.cornernode_fr_shockpot / 247.67);
+      break;
+
+    case "cornernode_rl_shockpot_data":
+      RL_shockpot_disp = 0.763*(event.message.cornernode_rl_shockpot / 247.67);
+      break;
+
+    case "cornernode_rr_shockpot_data":
+      RR_shockpot_disp = 0.766*(event.message.cornernode_rr_shockpot / 247.67);
+      break;
+  }
+
+  return {
+    FL_shockpot: FL_shockpot_disp,
+    FR_shockpot: FR_shockpot_disp,
+    RL_shockpot: RL_shockpot_disp,
+    RR_shockpot: RR_shockpot_disp,
+  };
+}

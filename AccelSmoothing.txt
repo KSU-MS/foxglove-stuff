@@ -1,0 +1,66 @@
+import { Input } from "./types";
+
+type Output = {
+  AccelX_Smooth: number;
+  AccelY_Smooth: number;
+  AccelZ_Smooth: number;
+};
+
+export const inputs = ["evelogger_vectornav_acceleration_data"];
+
+export const output = "AccelSmooth";
+
+let dataX = 0.0;
+let dataY = 0.0;
+let dataZ = 0.0;
+
+let rolling_window_X: number[] = [];
+let rolling_window_Y: number[] = [];
+let rolling_window_Z: number[] = [];
+const WINDOW_SIZE = 25;
+
+type InputEvent = Input<"evelogger_vectornav_acceleration_data">;
+
+export default function script(event: InputEvent): Output {
+  dataX = event.message.evelogger_vectornav_accelX;
+  dataY = event.message.evelogger_vectornav_accelY;
+  dataZ = event.message.evelogger_vectornav_accelZ;
+
+  // update rolling window
+  if (!isNaN(dataX) && isFinite(dataX)) {
+    rolling_window_X.push(dataX);
+    if (rolling_window_X.length > WINDOW_SIZE) {
+      rolling_window_X.shift(); // remove oldest
+    }
+  }
+
+  if (!isNaN(dataY) && isFinite(dataY)) {
+    rolling_window_Y.push(dataY);
+    if (rolling_window_Y.length > WINDOW_SIZE) {
+      rolling_window_Y.shift(); // remove oldest
+    }
+  }
+  
+  if (!isNaN(dataZ) && isFinite(dataZ)) {
+    rolling_window_Z.push(dataZ);
+    if (rolling_window_Z.length > WINDOW_SIZE) {
+      rolling_window_Z.shift(); // remove oldest
+    }
+  }
+
+  // compute rolling average
+  const window_avg_X =
+    rolling_window_X.reduce((a, b) => a + b, 0) / rolling_window_X.length;
+
+  const window_avg_Y =
+    rolling_window_Y.reduce((a, b) => a + b, 0) / rolling_window_Y.length;
+  
+  const window_avg_Z =
+    rolling_window_Z.reduce((a, b) => a + b, 0) / rolling_window_Z.length;
+
+  return {
+    AccelX_Smooth: window_avg_X,
+    AccelY_Smooth: window_avg_Y,
+    AccelZ_Smooth: window_avg_Z
+  };
+}

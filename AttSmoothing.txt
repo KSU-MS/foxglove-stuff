@@ -1,0 +1,66 @@
+import { Input } from "./types";
+
+type Output = {
+  Roll_Smooth: number;
+  Pitch_Smooth: number;
+  Yaw_Smooth: number;
+};
+
+export const inputs = ["evelogger_vectornav_attitude_data"];
+
+export const output = "AttSmooth";
+
+let dataRoll = 0.0;
+let dataPitch = 0.0;
+let dataYaw = 0.0;
+
+let rolling_window_Roll: number[] = [];
+let rolling_window_Pitch: number[] = [];
+let rolling_window_Yaw: number[] = [];
+const WINDOW_SIZE = 25;
+
+type InputEvent = Input<"evelogger_vectornav_attitude_data">;
+
+export default function script(event: InputEvent): Output {
+  dataRoll = event.message.evelogger_vectornav_roll;
+  dataPitch = event.message.evelogger_vectornav_pitch;
+  dataYaw = event.message.evelogger_vectornav_yaw;
+
+  // update rolling window
+  if (!isNaN(dataRoll) && isFinite(dataRoll)) {
+    rolling_window_Roll.push(dataRoll);
+    if (rolling_window_Roll.length > WINDOW_SIZE) {
+      rolling_window_Roll.shift(); // remove oldest
+    }
+  }
+
+  if (!isNaN(dataPitch) && isFinite(dataPitch)) {
+    rolling_window_Pitch.push(dataPitch);
+    if (rolling_window_Pitch.length > WINDOW_SIZE) {
+      rolling_window_Pitch.shift(); // remove oldest
+    }
+  }
+  
+  if (!isNaN(dataYaw) && isFinite(dataYaw)) {
+    rolling_window_Yaw.push(dataYaw);
+    if (rolling_window_Yaw.length > WINDOW_SIZE) {
+      rolling_window_Yaw.shift(); // remove oldest
+    }
+  }
+
+  // compute rolling average
+  const window_avg_Roll =
+    rolling_window_Roll.reduce((a, b) => a + b, 0) / rolling_window_Roll.length;
+
+  const window_avg_Pitch =
+    rolling_window_Pitch.reduce((a, b) => a + b, 0) / rolling_window_Pitch.length;
+  
+  const window_avg_Yaw =
+    rolling_window_Yaw.reduce((a, b) => a + b, 0) / rolling_window_Yaw.length;
+
+  return {
+    Roll_Smooth: window_avg_Roll,
+    Pitch_Smooth: window_avg_Pitch,
+    Yaw_Smooth: window_avg_Yaw
+  };
+}
